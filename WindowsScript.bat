@@ -9,12 +9,6 @@ REM ----------------------------------------------------------------------------
 echo are you admin kid?
 pause
 
-Reg.exe query "HKU\S-1-5-19\Environment"
-If Not %ERRORLEVEL% EQU 0 (
- echo You must have administrator rights to continue (bruh did you run it in administrator mode? if that doesnt fix the problem, go to user account control settings and slap that baby to max and see if that works)... 
- pause & exit
-)
-
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 echo Windows Features Disabling (Dism.exe)
@@ -1035,10 +1029,6 @@ cmdkey.exe /list > "%TEMP%\List.txt"
 findstr.exe Target "%TEMP%\List.txt" > "%TEMP%\tokensonly.txt"
 FOR /F "tokens=1,2 delims= " %%G IN (%TEMP%\tokensonly.txt) DO cmdkey.exe /delete:%%H
 del "%TEMP%\*.*" /s /f /q
-set SRVC_LIST=(RemoteAccess Telephony tlntsvr p2pimsvc simptcp fax msftpsvc)
-	for %%i in %HITHERE% do net stop %%i
-	for %%i in %HITHERE% sc config %%i start= disabled
-
 
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1191,47 +1181,6 @@ auditpol /set /category:* /failure:enable
 
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-echo User Specific Configuration
-pause
-
-copy %path%resources\ntrights.exe C:\Windows\System32
-if exist C:\Windows\System32\ntrights.exe (
-	echo Installation succeeded, managing user rights..
-	set remove=("Backup Operators" "Everyone" "Power Users" "Users" "NETWORK SERVICE" "LOCAL SERVICE" "Remote Desktop User" "ANONOYMOUS LOGON" "Guest" "Performance Log Users")
-	for %%a in (%remove%) do (
-			ntrights -U %%a -R SeNetworkLogonRight 
-			ntrights -U %%a -R SeIncreaseQuotaPrivilege
-			ntrights -U %%a -R SeInteractiveLogonRight
-			ntrights -U %%a -R SeRemoteInteractiveLogonRight
-			ntrights -U %%a -R SeSystemtimePrivilege
-			ntrights -U %%a +R SeDenyNetworkLogonRight
-			ntrights -U %%a +R SeDenyRemoteInteractiveLogonRight
-			ntrights -U %%a -R SeProfileSingleProcessPrivilege
-			ntrights -U %%a -R SeBatchLogonRight
-			ntrights -U %%a -R SeUndockPrivilege
-			ntrights -U %%a -R SeRestorePrivilege
-			ntrights -U %%a -R SeShutdownPrivilege
-		)
-		ntrights -U "Administrators" -R SeImpersonatePrivilege
-		ntrights -U "Administrator" -R SeImpersonatePrivilege
-		ntrights -U "SERVICE" -R SeImpersonatePrivilege
-		ntrights -U "LOCAL SERVICE" +R SeImpersonatePrivilege
-		ntrights -U "NETWORK SERVICE" +R SeImpersonatePrivilege
-		ntrights -U "Administrators" +R SeMachineAccountPrivilege
-		ntrights -U "Administrator" +R SeMachineAccountPrivilege
-		ntrights -U "Administrators" -R SeIncreaseQuotaPrivilege
-		ntrights -U "Administrator" -R SeIncreaseQuotaPrivilege
-		ntrights -U "Administrators" -R SeDebugPrivilege
-		ntrights -U "Administrator" -R SeDebugPrivilege
-		ntrights -U "Administrators" +R SeLockMemoryPrivilege
-		ntrights -U "Administrator" +R SeLockMemoryPrivilege
-		ntrights -U "Administrators" -R SeBatchLogonRight
-		ntrights -U "Administrator" -R SeBatchLogonRight
-		echo Managed User Rights
-)
-
-REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 Echo Nono services don't belong here >:(
 pause
 
@@ -1256,28 +1205,35 @@ for %%c in (%servicesG%) do (
 	echo Service: %%c
 	sc config "%%c" start= auto
 )
-
-REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-echo Registry key time
-pause
-echo Sneaking user output txt file in here :P
-start %path%output\users.txt
-start C:\Windows\System32\lusrmgr.msc /wait
+net stop DiagTrack
+net stop dmwappushservice
+net stop RemoteRegistry
+net stop RetailDemo
+net stop WinRM
+net stop WMPNetworkSvc
+sc config RemoteRegistry start=disabled
+sc config RetailDemo start=disabled
+sc config WinRM start=disabled
+sc config WMPNetworkSvc start=disabled
+sc delete DiagTrack
+sc delete dmwappushservice
+echo If you get a bunch of errors that's good, it means the nono services don't exist
+echo --
 
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 echo POW POW SETTINGS
-pause 
+pause
+ 
 powercfg -SETDCVALUEINDEX SCHEME_BALANCED SUB_NONE CONSOLELOCK 1
 powercfg -SETDCVALUEINDEX SCHEME_MIN SUB_NONE CONSOLELOCK 1
 powercfg -SETDCVALUEINDEX SCHEME_MAX SUB_NONE CONSOLELOCK 1
-net share > %path%output\shares.txt
 
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 echo Account management 
 pause
+
 net user Administrator /active:no && (
 	echo Disabled administrator account
 	(call)
@@ -1292,6 +1248,7 @@ REM ----------------------------------------------------------------------------
 
 echo Setting Passwords to CyberPatriot1
 pause
+
 for /f "tokens=*" %%a in ('type %path%resources\users.txt') do (
 	net user "%%a" "CyberPatriot1"
 	C:\Windows\System32\wbem\wmic UserAccount where Name="%%a" set PasswordExpires=True
@@ -1300,6 +1257,8 @@ for /f "tokens=*" %%a in ('type %path%resources\users.txt') do (
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 echo Disabling Scheduled Tasks
+pause
+
 schtasks /change /tn "\Microsoft\Windows\Autochk\Proxy" /disable
 schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator" /disable
 schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\KernelCeipTask" /disable
@@ -1311,22 +1270,6 @@ schtasks /change /tn "\Microsoft\Windows\SettingSync\BackupTask" /disable
 schtasks /change /tn "\Microsoft\Windows\SettingSync\NetworkStateChangeTask" /disable
 schtasks /change /tn "\Microsoft\Windows\Windows Error Reporting\QueueReporting" /disable
 schtasks /change /tn "\Microsoft\Office\Office 15 Subscription Heartbeat" /disable
-
-REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-echo Disable or delete non-vital services
-net stop DiagTrack
-net stop dmwappushservice
-net stop RemoteRegistry
-net stop RetailDemo
-net stop WinRM
-net stop WMPNetworkSvc
-sc config RemoteRegistry start=disabled
-sc config RetailDemo start=disabled
-sc config WinRM start=disabled
-sc config WMPNetworkSvc start=disabled
-sc delete DiagTrack
-sc delete dmwappushservice
 
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
