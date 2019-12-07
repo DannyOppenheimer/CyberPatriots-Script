@@ -2,7 +2,7 @@ REM Repository 1: https://github.com/teusink/Home-Security-by-W10-Hardening/
 REM Repository 2: https://github.com/aghorler/Windows-10-Hardening
 
 @echo off
-Title Harden Windows Bois & Color 1A
+Title Harden Windows Bois
 
 REM ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
